@@ -1,10 +1,12 @@
 # bot.py
 
 import logging
+import re
 import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
+# Импортируем настройки
 from config import TELEGRAM_BOT_TOKEN, API_KEY, API_URL, MODEL_NAME
 
 # Логирование
@@ -37,7 +39,11 @@ def get_qwen_response(prompt: str) -> str:
         response = requests.post(API_URL, json=data, headers=headers)
         if response.status_code == 200:
             result = response.json()
-            return result['choices'][0]['message']['content']
+            raw_answer = result['choices'][0]['message']['content']
+
+            # Убираем теги <think>...</think>
+            clean_answer = re.sub(r'<think>.*?</think>', '', raw_answer, flags=re.DOTALL).strip()
+            return clean_answer
         else:
             return f"Ошибка API: {response.status_code}, {response.text}"
     except Exception as e:
@@ -51,6 +57,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Основная функция запуска
 def main():
+    if not TELEGRAM_BOT_TOKEN:
+        raise ValueError("Токен бота не установлен в config.py")
+
+    print("Бот запускается...")
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
