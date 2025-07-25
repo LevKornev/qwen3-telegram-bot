@@ -1,8 +1,8 @@
 # bot.py
 
 import logging
-import re
 import requests
+import re
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
@@ -39,10 +39,9 @@ def get_qwen_response(prompt: str) -> str:
         response = requests.post(API_URL, json=data, headers=headers)
         if response.status_code == 200:
             result = response.json()
-            raw_answer = result['choices'][0]['message']['content']
-
-            # Убираем теги <think>...</think>
-            clean_answer = re.sub(r'<think>.*?</think>', '', raw_answer, flags=re.DOTALL).strip()
+            answer = result['choices'][0]['message']['content']
+            # Убираем теги <think> и лишние пробелы
+            clean_answer = re.sub(r'<think>.*?</think>', '', answer, flags=re.DOTALL).strip()
             return clean_answer
         else:
             return f"Ошибка API: {response.status_code}, {response.text}"
@@ -63,8 +62,9 @@ def main():
     print("Бот запускается...")
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
+    # Добавляем обработчики команд и сообщений
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Только один раз!
 
     print("Бот запущен...")
     app.run_polling()
